@@ -1,0 +1,42 @@
+FileVersion = 1
+Dependencies = {corlib = "*", "Beef.Linq" = "*"}
+
+[Project]
+Name = "2023AoC"
+StartupObject = "AoC.Program"
+DefaultNamespace = "AoC"
+
+[Configs.Debug.Win64]
+DebugWorkingDirectory = "$(ProjectDir)\\src"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day1.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day1.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day1_2.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day2.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day2.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day2_2.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day2_small.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day3.bf"

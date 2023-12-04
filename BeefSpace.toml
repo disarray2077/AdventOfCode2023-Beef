@@ -1,0 +1,5 @@
+FileVersion = 1
+Projects = {"2023AoC" = {Path = "."}, "Beef.Linq" = {Path = "../Repository/Beef.Linq/src"}}
+
+[Workspace]
+StartupProject = "2023AoC"
