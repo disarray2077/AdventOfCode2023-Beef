@@ -18,18 +18,17 @@ class Program
 				public int destinationStart;
 				public int sourceStart;
 				public int length;
-	
+
+				[Inline]
 				public int Convert(int source)
 				{
-					Debug.Assert(IsInRange(source));
 					return destinationStart + (source - sourceStart);
 				}
 
+				[Inline]
 				public bool IsInRange(int source)
 				{
-					if (source >= sourceStart && source < sourceStart + length)
-						return true;
-					return false;
+					return source >= sourceStart && source < sourceStart + length;
 				}
 			}
 
@@ -37,7 +36,7 @@ class Program
 
 			public int Convert(int source)
 			{
-				for (let map in maps)
+				for (let map in ref maps)
 				{
 					if (map.IsInRange(source))
 						return map.Convert(source);
@@ -45,24 +44,30 @@ class Program
 				return source;
 			}
 
+			[Inline]
 			public void Add(RangeMap map)
 			{
 				maps.Add(map);
 			}
 		}
 
+		enum MapType
+		{
+			SeedToSoil,
+			SoilToFertilizer,
+			FertilizerToWater,
+			WaterToLight,
+			LightToTemperature,
+			TemperatureToHumidity,
+			HumidityToLocation
+		}
+
 		public List<Enumerable.RangeEnumerable<int>> Seeds = new .() ~ delete _;
-		public RangeMaps SeedToSoil = new .() ~ delete _;
-		public RangeMaps SoilToFertilizer = new .() ~ delete _;
-		public RangeMaps FertilizerToWater = new .() ~ delete _;
-		public RangeMaps WaterToLight = new .() ~ delete _;
-		public RangeMaps LightToTemperature = new .() ~ delete _;
-		public RangeMaps TemperatureToHumidity = new .() ~ delete _;
-		public RangeMaps HumidityToLocation = new .() ~ delete _;
+		public List<RangeMaps> RangeMaps = new .() ~ delete _;
 
 		public Result<void> Parse(StringView text)
 		{
-			StringView currentSection = "";
+			RangeMaps currentMap = null;
 			for (let line in text.Split('\n'))
 			{
 				if (line.Length == 0)
@@ -76,66 +81,29 @@ class Program
 				}
 				if (line.EndsWith("map:"))
 				{
-					currentSection = Try!(line.Split(' ').GetNext());
+					if (currentMap != null)
+						RangeMaps.Add(currentMap);
+					currentMap = new RangeMaps();
 					continue;
 				}
-				Debug.Assert(!currentSection.IsEmpty);
-				switch (currentSection)
-				{
-				case "seed-to-soil":
-					var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
-					SeedToSoil.Add(.() {
-						destinationStart = rangeSplitter.GetNext(),
-						sourceStart = rangeSplitter.GetNext(),
-						length = rangeSplitter.GetNext()
-					});
-				case "soil-to-fertilizer":
-					var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
-					SoilToFertilizer.Add(.() {
-						destinationStart = rangeSplitter.GetNext(),
-						sourceStart = rangeSplitter.GetNext(),
-						length = rangeSplitter.GetNext()
-					});
-				case "fertilizer-to-water":
-					var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
-					FertilizerToWater.Add(.() {
-						destinationStart = rangeSplitter.GetNext(),
-						sourceStart = rangeSplitter.GetNext(),
-						length = rangeSplitter.GetNext()
-					});
-				case "water-to-light":
-					var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
-					WaterToLight.Add(.() {
-						destinationStart = rangeSplitter.GetNext(),
-						sourceStart = rangeSplitter.GetNext(),
-						length = rangeSplitter.GetNext()
-					});
-				case "light-to-temperature":
-					var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
-					LightToTemperature.Add(.() {
-						destinationStart = rangeSplitter.GetNext(),
-						sourceStart = rangeSplitter.GetNext(),
-						length = rangeSplitter.GetNext()
-					});
-				case "temperature-to-humidity":
-					var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
-					TemperatureToHumidity.Add(.() {
-						destinationStart = rangeSplitter.GetNext(),
-						sourceStart = rangeSplitter.GetNext(),
-						length = rangeSplitter.GetNext()
-					});
-				case "humidity-to-location":
-					var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
-					HumidityToLocation.Add(.() {
-						destinationStart = rangeSplitter.GetNext(),
-						sourceStart = rangeSplitter.GetNext(),
-						length = rangeSplitter.GetNext()
-					});
-				default:
-					Runtime.NotImplemented();
-				}
+				Debug.Assert(currentMap != null);
+				var rangeSplitter = line.Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value);
+				currentMap.Add(.() {
+					destinationStart = rangeSplitter.GetNext(),
+					sourceStart = rangeSplitter.GetNext(),
+					length = rangeSplitter.GetNext()
+				});
 			}
+			if (currentMap != null)
+				RangeMaps.Add(currentMap);
+			Debug.Assert(RangeMaps.Count == Enum.GetCount<MapType>());
 			return .Ok;
+		}
+
+		[Inline]
+		public RangeMaps Get(MapType type)
+		{
+			return RangeMaps[(int)type];
 		}
 	}
 
@@ -149,26 +117,26 @@ class Program
 		almanac.Parse(ss.ReadToEnd(.. scope .()));
 
 		int minLocation = int.MaxValue;
-		Monitor lock = scope .();
 		int totalRun = 0;
+		Monitor lock = scope .();
 		for (let seedGenerator in almanac.Seeds)
 		{
 			ThreadPool.QueueUserWorkItem(new [=seedGenerator, &lock, &totalRun, &minLocation, &almanac]() =>
 			{
-				let soils = seedGenerator.Select((s) => almanac.SeedToSoil.Convert(s));
-				let fertilizers = soils.Select((s) => almanac.SoilToFertilizer.Convert(s));
-				let waters = fertilizers.Select((s) => almanac.FertilizerToWater.Convert(s));
-				let lights = waters.Select((s) => almanac.WaterToLight.Convert(s));
-				let temperatures = lights.Select((s) => almanac.LightToTemperature.Convert(s));
-				let humidities = temperatures.Select((s) => almanac.TemperatureToHumidity.Convert(s));
-				let locations = humidities.Select((s) => almanac.HumidityToLocation.Convert(s));
+				let soils = seedGenerator.Select((s) => almanac.Get(.SeedToSoil).Convert(s));
+				let fertilizers = soils.Select((s) => almanac.Get(.SoilToFertilizer).Convert(s));
+				let waters = fertilizers.Select((s) => almanac.Get(.FertilizerToWater).Convert(s));
+				let lights = waters.Select((s) => almanac.Get(.WaterToLight).Convert(s));
+				let temperatures = lights.Select((s) => almanac.Get(.LightToTemperature).Convert(s));
+				let humidities = temperatures.Select((s) => almanac.Get(.TemperatureToHumidity).Convert(s));
+				let locations = humidities.Select((s) => almanac.Get(.HumidityToLocation).Convert(s));
 				int min = locations.Min();
 				using (lock.Enter())
 				{
 					if (minLocation > min)
 						minLocation = min;
+					totalRun += 1;
 				}
-				Interlocked.Increment(ref totalRun);
 			});
 		}
 
