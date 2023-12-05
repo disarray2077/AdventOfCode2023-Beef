@@ -9,6 +9,9 @@ DefaultNamespace = "AoC"
 [Configs.Debug.Win64]
 DebugWorkingDirectory = "$(ProjectDir)\\src"
 
+[Configs.Release.Win64]
+DebugWorkingDirectory = "$(ProjectDir)\\src"
+
 [[ProjectFolder.Items]]
 Type = "IgnoreSource"
 Name = "Day1.bf"
@@ -40,3 +43,35 @@ Name = "Day2_small.txt"
 [[ProjectFolder.Items]]
 Type = "IgnoreSource"
 Name = "Day3.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day3.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day3_2.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day3_small.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day4.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day4.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day4_2.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day4_small.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day5.bf"
