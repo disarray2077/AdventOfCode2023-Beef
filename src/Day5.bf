@@ -67,8 +67,9 @@ class Program
 		public Result<void> Parse(StringView text)
 		{
 			RangeMaps currentMap = null;
-			for (let line in text.Split('\n'))
+			for (var line in text.Split('\n'))
 			{
+				line.Trim();
 				if (line.Length == 0)
 					continue;
 				if (line.StartsWith("seeds: "))
@@ -107,7 +108,7 @@ class Program
 	public static void Main()
 	{
 		let fs = scope FileStream();
-		fs.Open("Day5.txt");
+		fs.Open("Day5_small.txt");
 		let ss = scope StreamReader(fs);
 
 		Almanac almanac = scope .();

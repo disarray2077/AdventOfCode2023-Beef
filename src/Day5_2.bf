@@ -68,8 +68,9 @@ class Program
 		public Result<void> Parse(StringView text)
 		{
 			RangeMaps currentMap = null;
-			for (let line in text.Split('\n'))
+			for (var line in text.Split('\n'))
 			{
+				line.Trim();
 				if (line.Length == 0)
 					continue;
 				if (line.StartsWith("seeds: "))
