@@ -6,8 +6,14 @@ Name = "2023AoC"
 StartupObject = "AoC.Program"
 DefaultNamespace = "AoC"
 
+[[Project.DistinctOptions]]
+Filter = ""
+
 [Configs.Debug.Win64]
 DebugWorkingDirectory = "$(ProjectDir)\\src"
+
+[[Configs.Debug.Win64.DistinctOptions]]
+Filter = ""
 
 [Configs.Release.Win64]
 DebugWorkingDirectory = "$(ProjectDir)\\src"
@@ -75,3 +81,51 @@ Name = "Day4_small.txt"
 [[ProjectFolder.Items]]
 Type = "IgnoreSource"
 Name = "Day5.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day5.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day5_2.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day5_big.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day5_small.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day6.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day6.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day6_2.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day6_small.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day7.bf"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day7.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day7_big.txt"
+
+[[ProjectFolder.Items]]
+Type = "IgnoreSource"
+Name = "Day7_small.txt"
