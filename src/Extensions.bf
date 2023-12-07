@@ -30,4 +30,16 @@ namespace System
 			return strings[(.)this];
 		}
 	}
+
+	extension SizedArray<T, CSize>
+	{
+		public int Count(T value)
+		{
+			int count = 0;
+			for (int i = 0; i < CSize; i++)
+				if (mVal[i] == value)
+					count += 1;
+			return count;
+		}
+	}
 }
