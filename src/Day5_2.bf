@@ -11,37 +11,92 @@ class Program
 {
 	class Almanac
 	{
+		public struct Range : this(int start, int end)
+		{
+			public int Length => end - start;
+
+			public void Adjust(int offset) mut
+			{
+				this.start += offset;
+				this.end += offset;
+			}
+
+			public void ShrinkLeft(int length) mut
+			{
+				this.start += length;
+			}
+
+			public void ShrinkRight(int length) mut
+			{
+				this.end -= length;
+			}
+		}
+
 		class RangeMaps
 		{
 			struct RangeMap
 			{
+				public enum ConversionResult
+				{
+					case Ok;
+					case Partial(Range remnantRange);
+					case Fail;
+				}
+
 				public int destinationStart;
 				public int sourceStart;
 				public int length;
 
-				[Inline]
-				public int Convert(int source)
-				{
-					return destinationStart + (source - sourceStart);
-				}
+				public int SourceStart => sourceStart;
+				public int SourceEnd => sourceStart + length;
 
-				[Inline]
-				public bool IsInRange(int source)
+				public ConversionResult Convert(ref Range source)
 				{
-					return source >= sourceStart && source < sourceStart + length;
+					// Range is contained completely inside our range.
+					if (source.start >= SourceStart && source.end <= SourceEnd)
+					{
+						source.Adjust(destinationStart - sourceStart);
+						return .Ok;
+					}
+					// Range's right side is partially inside our range.
+					else if (source.end - 1 >= SourceStart && source.end - 1 < SourceEnd)
+					{
+						Range remnantRange = .(source.start, SourceStart);
+						source.ShrinkLeft(remnantRange.Length);
+						source.Adjust(destinationStart - sourceStart);
+						return .Partial(remnantRange);
+					}
+					// Range's left side is partially inside our range.
+					else if (source.start >= SourceStart && source.start < SourceEnd)
+					{
+						Range remnantRange = .(SourceEnd, source.end);
+						source.ShrinkRight(remnantRange.Length);
+						source.Adjust(destinationStart - sourceStart);
+						return .Partial(remnantRange);
+					}
+					// Range is completely outside our range.
+					else
+						return .Fail;
 				}
 			}
 
 			List<RangeMap> maps = new .() ~ delete _;
 
-			public int Convert(int source)
+			public RangeMap.ConversionResult Convert(ref Almanac.Range source)
 			{
 				for (let map in ref maps)
 				{
-					if (map.IsInRange(source))
-						return map.Convert(source);
+					switch (map.Convert(ref source))
+					{
+					case .Ok:
+						return .Ok;
+					case .Partial(let remnantRange):
+						return .Partial(remnantRange);
+					case .Fail:
+						continue;
+					}
 				}
-				return source;
+				return .Fail;
 			}
 
 			[Inline]
@@ -51,18 +106,7 @@ class Program
 			}
 		}
 
-		enum MapType
-		{
-			SeedToSoil,
-			SoilToFertilizer,
-			FertilizerToWater,
-			WaterToLight,
-			LightToTemperature,
-			TemperatureToHumidity,
-			HumidityToLocation
-		}
-
-		public List<Enumerable.RangeEnumerable<int>> Seeds = new .() ~ delete _;
+		public List<Range> Seeds = new .() ~ delete _;
 		public List<RangeMaps> RangeMaps = new .() ~ delete _;
 
 		public Result<void> Parse(StringView text)
@@ -77,7 +121,7 @@ class Program
 				{
 					var seedRanges = line.Substring(7).Split(' ', .RemoveEmptyEntries).Select((s) => int.Parse(s).Value).ToList(.. scope .());
 					for (int i = 0; i < seedRanges.Count; i += 2)
-						Seeds.Add(Enumerable.Range(seedRanges[i], seedRanges[i] + seedRanges[i + 1]));
+						Seeds.Add(.(seedRanges[i], seedRanges[i] + seedRanges[i + 1]));
 					continue;
 				}
 				if (line.EndsWith("map:"))
@@ -97,19 +141,15 @@ class Program
 			}
 			if (currentMap != null)
 				RangeMaps.Add(currentMap);
-			Debug.Assert(RangeMaps.Count == Enum.GetCount<MapType>());
+			Debug.Assert(RangeMaps.Count == 7);
 			return .Ok;
-		}
-
-		[Inline]
-		public RangeMaps Get(MapType type)
-		{
-			return RangeMaps[(int)type];
 		}
 	}
 
 	public static void Main()
 	{
+		let sw = scope Stopwatch()..Start();
+
 		let fs = scope FileStream();
 		fs.Open("Day5.txt");
 		let ss = scope StreamReader(fs);
@@ -117,34 +157,22 @@ class Program
 		Almanac almanac = scope .();
 		almanac.Parse(ss.ReadToEnd(.. scope .()));
 
-		int minLocation = int.MaxValue;
-		int totalRun = 0;
-		Monitor lock = scope .();
-		for (let seedGenerator in almanac.Seeds)
+		let rangeStack = almanac.Seeds.Select((s) => (range: s, mapIndex: 0)).ToList(.. scope .());
+		let locations = scope List<Almanac.Range>();
+		while (!rangeStack.IsEmpty)
 		{
-			ThreadPool.QueueUserWorkItem(new [=seedGenerator, &lock, &totalRun, &minLocation, &almanac]() =>
+			var rangeInfo = rangeStack.PopFront();
+			while (rangeInfo.mapIndex < almanac.RangeMaps.Count)
 			{
-				let soils = seedGenerator.Select((s) => almanac.Get(.SeedToSoil).Convert(s));
-				let fertilizers = soils.Select((s) => almanac.Get(.SoilToFertilizer).Convert(s));
-				let waters = fertilizers.Select((s) => almanac.Get(.FertilizerToWater).Convert(s));
-				let lights = waters.Select((s) => almanac.Get(.WaterToLight).Convert(s));
-				let temperatures = lights.Select((s) => almanac.Get(.LightToTemperature).Convert(s));
-				let humidities = temperatures.Select((s) => almanac.Get(.TemperatureToHumidity).Convert(s));
-				let locations = humidities.Select((s) => almanac.Get(.HumidityToLocation).Convert(s));
-				int min = locations.Min();
-				using (lock.Enter())
-				{
-					if (minLocation > min)
-						minLocation = min;
-					totalRun += 1;
-				}
-			});
+				if (almanac.RangeMaps[rangeInfo.mapIndex].Convert(ref rangeInfo.range) case .Partial(let remnantRange))
+					rangeStack.Add((remnantRange, rangeInfo.mapIndex));
+				rangeInfo.mapIndex += 1;
+			}
+			locations.Add(rangeInfo.range);
 		}
 
-		while (totalRun != almanac.Seeds.Count)
-			Thread.Sleep(1000);
-
-		Console.WriteLine(minLocation);
+		Console.WriteLine(locations.Select((x) => x.start).Min());
+		Console.WriteLine("Time Taken: {}", sw.Elapsed);
 		Console.Read();
 	}
 }
